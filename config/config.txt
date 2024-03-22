@@ -1,0 +1,1 @@
+bucket=s3://datawarehouse-wizards/activities/
