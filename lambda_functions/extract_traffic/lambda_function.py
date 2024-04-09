@@ -30,7 +30,7 @@ def get_real_time_flow_info(latitude, longitude, radius, apiKey, url):
         response.raise_for_status()
 
 def lambda_handler(event, context):
-    apiKey = "YvG138PTXTsHESuG-EB4AYi-Fyg7PsqfhqPRqu9NW6k"
+    apiKey = "abc"
     url = "https://data.traffic.hereapi.com/v7/flow"
     radius = 10  # radius in meters
 
