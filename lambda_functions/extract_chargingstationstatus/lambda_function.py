@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import boto3
 from io import StringIO
+from datetime import datetime
 
 # Initialisieren Sie den S3-Client
 s3 = boto3.client('s3')
@@ -32,12 +33,11 @@ def lambda_handler(event, context):
         csv_buffer = StringIO()
         df.to_csv(csv_buffer)
         
-        # Generieren Sie einen Dateinamen basierend auf dem aktuellen Timestamp, um Duplikate zu vermeiden
-        from datetime import datetime
-        filename = f"evse_data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+        folder = "raw/charging_stations/"
+        filename = f"{folder}evse_data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
         
         # Hochladen der Daten in den S3-Bucket
-        s3.put_object(Bucket='datawarehouse-wizards', Key=filename, Body=csv_buffer.getvalue())
+        s3.put_object(Bucket='datawarehouse-wizards', Key=filename, Body=csv_buffer.getvalue(), ACL="bucket-owner-full-control")
         
         s3.put_object(Bucket='dwl-chargingstation-avaiability', Key=filename, Body=csv_buffer.getvalue())
 

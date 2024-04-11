@@ -30,7 +30,7 @@ def get_real_time_flow_info(latitude, longitude, radius, apiKey, url):
         response.raise_for_status()
 
 def lambda_handler(event, context):
-    apiKey = "abc"
+    apiKey = ""
     url = "https://data.traffic.hereapi.com/v7/flow"
     radius = 10  # radius in meters
 
@@ -75,8 +75,8 @@ def lambda_handler(event, context):
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  # Format: YYYY-MM-DD_hh-mm-ss
     object_key_1 = f"{folder_name}traffic_data_{current_time}.json"  # Filename includes current date and time
     object_key_2 = f"{folder_name}traffic_data_{current_time}.json"
-    s3.put_object(Bucket=bucket_name_1, Key=object_key_1, Body=json.dumps(flattened_data))
-    s3.put_object(Bucket=bucket_name_2, Key=object_key_2, Body=json.dumps(flattened_data))
+    s3.put_object(Bucket=bucket_name_1, Key=object_key_1, Body=json.dumps(flattened_data), ACL="bucket-owner-full-control")
+    s3.put_object(Bucket=bucket_name_2, Key=object_key_2, Body=json.dumps(flattened_data), ACL="bucket-owner-full-control")
 
 
     return {
