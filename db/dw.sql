@@ -45,6 +45,26 @@ CREATE TABLE public.traffic (
 );
 
 
+create table public.traffic as 
+WITH t AS (
+  SELECT
+    CAST(REPLACE(SPLIT_PART(REPLACE(REPLACE(geometry_coordinates, '[', ''), ']', ''), ',', 1), '"', '') AS FLOAT) AS longitude,
+    CAST(REPLACE(SPLIT_PART(REPLACE(REPLACE(geometry_coordinates, '[', ''), ']', ''), ',', 2), '"', '') AS FLOAT) AS latitude,
+    "timestamp" AS time_id,
+    date_trunc('hour', "timestamp") AS truncated_time,
+    jam_factor
+  FROM public.trafficdata
+)
+SELECT 
+  longitude,
+  latitude,
+  truncated_time AS time_id,
+  AVG(jam_factor) AS jam_factor
+FROM t
+GROUP BY longitude, latitude, truncated_time
+;
+
+
 ---------
 CREATE TABLE public.activities_tmp (
 	lat_ame varchar NULL,
