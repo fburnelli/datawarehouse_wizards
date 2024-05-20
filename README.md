@@ -6,3 +6,4 @@ FOLDER STRUCTURE:
 - Lambda function
 - Documentation: Documentation, architectures and presentations
 - Data: test and explore locally 
+- Visualisation: Dashboard and analytics
