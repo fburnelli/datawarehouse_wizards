@@ -1,0 +1,60 @@
+import pandas as pd
+from io import StringIO
+import boto3
+import psycopg2
+
+def lambda_handler(event, context):
+    bucket_name = 'datawarehouse-wizards'
+    folder_path = 'processed/charging_stations/'
+    s3 = boto3.client('s3')
+    
+    # Liste aller Objekte im angegebenen Ordner abrufen
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=folder_path)
+    files = [obj['Key'] for obj in response.get('Contents', [])]
+
+    # Datenbankverbindung
+    connection = psycopg2.connect(
+        dbname='warehousewizardsdatalake',
+        user='wizardsadmin',
+        password='wizardshslu',
+        host='warehousewizardsdatalake.c9gsisgi07br.us-east-1.rds.amazonaws.com',
+        port='5432'
+    )
+    cursor = connection.cursor()
+
+    insert_query = """
+    INSERT INTO charging_stations_all (
+        nr, type, id, geometry_type, geometry_coordinates, featureType, evse_id, evse_status, last_update, value_added_services,
+        plugs, latitude, longitude, operator_id, authentication_modes, calibration_law_data_availability, accessibility_location,
+        charging_station_id, hotline_phone_number, is_open_24_hours, postal_code, city, street, country, parking_facility,
+        house_num, payment_options, is_hubject_compatible, charging_facilities, renewable_energy, charging_station_names,
+        evseID, accessibility, dynamic_info_available, google_coordinates, sub_operator_name, dynamic_power_level, max_capacity,
+        additional_info, delta_type, floor, time_zone, hub_operator_id, timestamp
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+    
+    try:
+        for file_key in files:
+            # Nur CSV-Dateien verarbeiten
+            if file_key.endswith('.csv'):
+                # CSV aus S3 laden
+                response = s3.get_object(Bucket=bucket_name, Key=file_key)
+                file_content = response['Body'].read().decode('utf-8')
+                csv_data = StringIO(file_content)
+                data = pd.read_csv(csv_data, sep=',', quotechar='"')
+
+                # Einfügen der Daten in die Datenbank
+                for index, row in data.iterrows():
+                    cursor.execute(insert_query, tuple(row))
+                connection.commit()
+    except Exception as e:
+        print(f"Error: {e}")
+        connection.rollback()
+    finally:
+        cursor.close()
+        connection.close()
+
+    return {
+        'statusCode': 200,
+        'body': "Data processing and insertion completed successfully!"
+    }
