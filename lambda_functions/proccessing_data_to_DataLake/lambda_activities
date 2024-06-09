@@ -1,1 +1,50 @@
-#code
+
+import pandas as pd
+from io import StringIO
+import boto3
+import psycopg2
+
+def lambda_handler(event, context):
+    bucket_name = 'datawarehouse-wizards'
+    key = 'raw/activities/activities_2024-03-23_13-12-40.csv'
+    s3 = boto3.client('s3')
+
+    # CSV aus S3 laden
+    response = s3.get_object(Bucket=bucket_name, Key=key)
+    file_content = response['Body'].read().decode('utf-8')
+    csv_data = StringIO(file_content)
+    data = pd.read_csv(csv_data, sep=',')
+
+    # Datenbankverbindung
+    connection = psycopg2.connect(
+        dbname='warehousewizardsdatalake',
+        user='wizardsadmin',
+        password='wizardshslu',
+        host='warehousewizardsdatalake.c9gsisgi07br.us-east-1.rds.amazonaws.com',
+        port='5432'
+    )
+    cursor = connection.cursor()
+
+    insert_query = """
+    INSERT INTO activities (
+        lat_ame, lat_cs, lon_ame, lon_cs, node_name, node_type, reference_date
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+
+    # Einfügen der Daten in die Datenbank
+    try:
+        for index, row in data.iterrows():
+            cursor.execute(insert_query, tuple(row))
+        connection.commit()
+        print("Data inserted successfully")
+    except Exception as e:
+        print(f"Error: {e}")
+        connection.rollback()
+    finally:
+        cursor.close()
+        connection.close()
+
+    return {
+        'statusCode': 200,
+        'body': "Data processing and insertion completed successfully!"
+    }
