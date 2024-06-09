@@ -1,0 +1,65 @@
+import json
+import boto3
+import psycopg2
+
+def lambda_handler(event, context):
+    # Konfiguration
+    bucket_name = 'datawarehouse-wizards'
+    folder_path = 'processed/traffic/sub10/'  # Angepasster Ordnerpfad
+    s3 = boto3.client('s3')
+    
+    try:
+        # Verbindung zur Datenbank
+        connection = psycopg2.connect(
+            dbname='warehousewizardsdatalake',
+            user='wizardsadmin',
+            password='wizardshslu',
+            host='warehousewizardsdatalake.c9gsisgi07br.us-east-1.rds.amazonaws.com',
+            port='5432'
+        )
+        cursor = connection.cursor()
+
+        # Dateien im Ordner auflisten und durchgehen
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=folder_path)
+        files = [obj['Key'] for obj in response.get('Contents', []) if obj['Key'].endswith('.json')]
+
+        insert_query = """
+        INSERT INTO trafficdata (id, geometry_coordinates, description, location_length, lat, lng, link_length, speed, free_flow, jam_factor, timestamp)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+
+        for file_key in files:
+            response = s3.get_object(Bucket=bucket_name, Key=file_key)
+            file_content = response['Body'].read().decode('utf-8')
+            json_content = json.loads(file_content)
+
+            for index, item in enumerate(json_content):
+                cursor.execute(insert_query, (
+                    index,  # Hier fügen wir den Index des Datensatzes ein
+                    json.dumps(item['geometry_coordinates']),
+                    item['description'],
+                    item['location_length'],
+                    item['lat'],
+                    item['lng'],
+                    item['link_length'],
+                    item['speed'],
+                    item['freeFlow'],
+                    item['jamFactor'],
+                    item['timestamp']
+                ))
+            connection.commit()
+
+    except Exception as e:
+        print("Error:", e)
+        connection.rollback()
+
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+            print("PostgreSQL connection is closed")
+
+    return {
+        'statusCode': 200,
+        'body': "Data processing and insertion completed successfully!"
+    }
