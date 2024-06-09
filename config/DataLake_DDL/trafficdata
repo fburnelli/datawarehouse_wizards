@@ -1,0 +1,13 @@
+CREATE TABLE public.trafficdata (
+	id serial4 NOT NULL,
+	geometry_coordinates text NULL,
+	description text NULL,
+	location_length float8 NULL,
+	lat float8 NULL,
+	lng float8 NULL,
+	link_length float8 NULL,
+	speed float8 NULL,
+	free_flow float8 NULL,
+	jam_factor float8 NULL,
+	"timestamp" timestamp NULL
+);
