@@ -1,1 +1,9 @@
-#code
+CREATE TABLE public.activities (
+	lat_ame varchar NULL,
+	lat_cs varchar NULL,
+	lon_ame varchar NULL,
+	lon_cs varchar NULL,
+	node_name varchar NULL,
+	node_type varchar NULL,
+	reference_date varchar NULL
+);
